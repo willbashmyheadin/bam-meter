@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="bn">
 <head>
@@ -44,8 +43,18 @@
 
     .share { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.6rem; }
 
-    /* Hides the numeric score line on result screen (mystique mode) */
+    /* Hide all numeric details except the big percent */
     .scoreline { display:none !important; }
+
+    /* Big red % at top, centered */
+    .percentBig {
+      font-size: clamp(2.2rem, 7vw, 4.2rem);
+      font-weight: 900;
+      text-align: center;
+      color: var(--brand);
+      line-height: 1.05;
+      margin: .2rem 0 .6rem;
+    }
 
     /* Print view: render only the result card nicely for PDF */
     @media print {
@@ -60,20 +69,6 @@
     <h1>☭ বাম Meter</h1>
   </header>
   <main>
-    <section class="legend">
-      <fieldset>
-        <legend>কীভাবে খেলবেন</legend>
-        <p>প্রতিটা কথায় আপনি কতটা একমত, বলুন —</p>
-        <ul>
-          <li>👉 পুরোপুরি একমত (৪)</li>
-          <li>👉 একমত (৩)</li>
-          <li>👉 মতামত নেই (২)</li>
-          <li>👉 একমত নই (১)</li>
-          <li>👉 একদমই একমত নই (০)</li>
-        </ul>
-      </fieldset>
-    </section>
-
     <section class="quiz" aria-live="polite">
       <div class="progress" aria-hidden="true"><div id="bar" class="bar"></div></div>
       <div class="qcard" id="qcard">
@@ -92,12 +87,16 @@
 
     <section id="result" class="result" role="region" aria-label="ফলাফল">
       <div class="scorebox">
-        <!-- Hidden numeric score line (kept in DOM for potential future use) -->
+        <!-- Hidden numeric score line (kept for dev) -->
         <div class="scoreline" aria-hidden="true">
           <span class="badge">মোট স্কোর</span>
           <span id="score">0</span> / <span id="max">0</span> (<span id="percent">0</span>%)
         </div>
 
+        <!-- BIG % -->
+        <div id="percentBig" class="percentBig">0%</div>
+
+        <!-- Assessment & comment -->
         <div class="assessment">সার্বিক মূল্যায়ন: <span id="assessment" class="muted">—</span></div>
         <div id="comment" class="muted"></div>
       </div>
@@ -127,16 +126,16 @@
     "ভোট মানেই এখন মাস্তান, ক্যাডার আর সিন্ডিকেটের খেলা।",
     "গার্মেন্টসের মালিকরা মুনাফায় মজে, আর শ্রমিকরা ঘাম ঝরিয়েও টিকে থাকতে লড়ে যাচ্ছে — এটাই বাস্তব?",
     "রিকশাওয়ালা, হকার, গৃহকর্মী — কেউই রাষ্ট্রের নিরাপত্তা পায় না, অথচ ওরাই শহরটা চালিয়ে রাখে৷",
-    "কর্পোরেট হাউজ যখন তখন এম্পলয়ি ছাটাই করে, বেতন দিতে গড়িমসি করে, ইউনিয়ন করতে দেয় না- এগুলো অন্যায়।",
+    "কর্পোরেট হাউজের যখন তখন ছাটাই করা, বেতন দিতে গড়িমসি করা, ইউনিয়ন করতে না দেওয়া- এম্পলয়িদের প্রতি অন্যায়।",
     "মুক্তিযুদ্ধ হয়েছিল শোষণমুক্তির জন্য — কিন্তু আজও ধনীদের রাজত্ব চলছে এবং কোনো সরকারই এ বিষয়ে কাজ করে না।",
     "বিশ্বব্যাংক আর আইএমএফ আমাদের দেশে ঋণ দেয়, কিন্তু তাদের শর্তে আমরা হাবুডুবু খাই — এমনটাই মনে হয়?",
-    "স্কুলে ভালো শিক্ষক নেই, বইয়ের মান খারাপ — কারণ বিদেশি দাতারা সরকারকে খরচ কমাতে বলে।",
+    "স্কুলে ভালো শিক্ষক নেই, বইয়ের মান খারাপ — কারণ বিদেশি দাতারা (বিশ্বব্যাংক, আইএমএফ) সরকারকে খরচ কমাতে বলে।",
     "হাসপাতাল এখন ব্যবসা; গরিব মানুষ শুধু লাইনে দাঁড়িয়েই কষ্ট পায়।",
     "ফিলিস্তিন নিয়ে ইসলামী দলগুলো যত কথা বলে, কাজের সময় ততটা দেখা যায় না।",
     "গ্রামে এখনো ছোট ভূমিহীন কৃষকরা বড় জমির মালিক আর মহাজনদের হাতে বিপদে পড়ে।",
     "আমাদের নদী থেকে বাণিজ্য — অনেক সিদ্ধান্তই নিতে হয় পাশের বড় দেশের চাপে।",
     "যারা একাত্তরে অপরাধ করেছিল, আজ তারা সম্মানিত হয়ে ঘুরে বেড়ায় — এটা ভীষণ কষ্টদায়ক।",
-    "বেসরকারিকরণের নামে সরকারি সম্পদ (যেমন- বন্দর, খনিজ সম্পদ) বিদেশি কোম্পানিদের কাছে বেচে দেওয়া মানে, আসলে দেশটাই বিক্রি হচ্ছে।",
+    "বেসরকারিকরণের নামে রাষ্ট্রীয় সম্পদ (যেমন- বন্দর, খনিজ সম্পদ) বিদেশি কোম্পানিদের কাছে বেচে দেওয়া মানে, আসলে দেশটাই বিক্রি হচ্ছে।",
     "নারী আর আদিবাসীদের প্রতি বৈষম্য শুধু সংস্কৃতির নয়, এটি অর্থনৈতিক শোষণেরও একটি অংশ।",
     "রাষ্ট্রের কোনো ধর্ম থাকা উচিত না — সবাইকে সমানভাবে দেখতে হবে।",
     "ঢাকায় নতুন নতুন রাস্তাঘাট বানানো হয়, কিন্তু গ্রামে মানুষ হাঁটার রাস্তাই পায় না — এই বৈষম্যটা অন্যায় না?",
@@ -168,6 +167,7 @@
   const percentEl= document.getElementById('percent');
   const assessEl = document.getElementById('assessment');
   const commentEl= document.getElementById('comment');
+  const percentBigEl = document.getElementById('percentBig');
 
   const btnPrint = document.getElementById('btnPrint');
   const btnShare = document.getElementById('btnShare');
@@ -196,12 +196,13 @@
   function showResult(){
     const {total,max,pct,band} = calculateScore();
 
-    // keep internal metrics updated (hidden in UI)
+    // keep internals updated (hidden small fields)
     scoreEl.textContent = total;
     maxEl.textContent = max;
     percentEl.textContent = pct;
 
-    // show only assessment & comment
+    // BIG percent & visible texts
+    percentBigEl.textContent = pct + '%';
     assessEl.textContent = band.label;
     commentEl.textContent = band.comment;
 
@@ -249,7 +250,6 @@
       i++;
       renderQuestion();
     } else {
-      // last question: ensure all answered, else jump to first missing
       const missingIndex = answers.findIndex(v=>!Number.isFinite(v));
       if (missingIndex === -1) {
         showResult();
@@ -281,7 +281,7 @@
 
   btnShare.addEventListener('click', ()=>{
     const { band } = calculateScore();
-    // mystique share text: no numeric score
+    // Keeping share text "mystique" (no numeric %). Say the word and I’ll add the percent here too.
     const text = `আমার বাম Meter ফলাফল — ${band.label}`;
     const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(location.href)}&quote=${encodeURIComponent(text)}`;
     window.open(shareUrl, '_blank');
@@ -289,6 +289,35 @@
 
   // Print to PDF
   btnPrint.addEventListener('click', ()=>{ window.print(); });
+
+  // Dev tests
+  function scoreFromAnswers(arr){
+    const maxPerQ = Math.max(...LIKERT_OPTIONS.map(o=>o.value));
+    const total = arr.reduce((s,v)=> s + (Number.isFinite(v)? v:0), 0);
+    const max = arr.length * maxPerQ;
+    const pct = Math.round(total/max*100);
+    const band = RUBRIC.find(r => pct >= r.min) || RUBRIC[RUBRIC.length-1];
+    return {total,max,pct,band:band.label};
+  }
+  (function runTests(){
+    try {
+      const n = QUESTIONS.length;
+      const all0 = Array(n).fill(0);
+      const all4 = Array(n).fill(4);
+      const alt = Array.from({length:n}, (_,k)=> k%2===0?4:0);
+      const mid = Array(n).fill(3);
+
+      console.assert(scoreFromAnswers(all0).pct === 0, 'All zeros should be 0%');
+      console.assert(scoreFromAnswers(all0).band === 'মূলধারার', '0% band should be মূলধারার');
+      const sAll4 = scoreFromAnswers(all4);
+      console.assert(sAll4.pct === 100 && sAll4.total === 4*n, 'All fours should be 100% and total=4*n');
+      console.assert(sAll4.band === 'একদম লাল চিন্তা!', '100% band should be একদম লাল চিন্তা!');
+      console.assert(scoreFromAnswers(alt).pct === 50, 'Alternating 4/0 should be 50%');
+      const sMid = scoreFromAnswers(mid);
+      console.assert(sMid.pct === 75 && sMid.band === 'খুব বামপন্থী', 'All 3s should be 75% and খুব বামপন্থী');
+      console.log('%cTests passed', 'color:green');
+    } catch (e) { console.warn('Test failure:', e); }
+  })();
 
   // Boot
   (function init(){
@@ -298,4 +327,3 @@
   </script>
 </body>
 </html>
-
