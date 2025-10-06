@@ -1,5 +1,4 @@
 
-
 <!doctype html>
 <html lang="bn">
 <head>
@@ -44,6 +43,9 @@
     .muted { color: var(--muted); }
 
     .share { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.6rem; }
+
+    /* Hides the numeric score line on result screen (mystique mode) */
+    .scoreline { display:none !important; }
 
     /* Print view: render only the result card nicely for PDF */
     @media print {
@@ -90,9 +92,12 @@
 
     <section id="result" class="result" role="region" aria-label="ফলাফল">
       <div class="scorebox">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:.6rem; flex-wrap:wrap;">
-          <div><span class="badge">মোট স্কোর</span> <span id="score">0</span> / <span id="max">0</span> (<span id="percent">0</span>%)</div>
+        <!-- Hidden numeric score line (kept in DOM for potential future use) -->
+        <div class="scoreline" aria-hidden="true">
+          <span class="badge">মোট স্কোর</span>
+          <span id="score">0</span> / <span id="max">0</span> (<span id="percent">0</span>%)
         </div>
+
         <div class="assessment">সার্বিক মূল্যায়ন: <span id="assessment" class="muted">—</span></div>
         <div id="comment" class="muted"></div>
       </div>
@@ -190,9 +195,13 @@
 
   function showResult(){
     const {total,max,pct,band} = calculateScore();
+
+    // keep internal metrics updated (hidden in UI)
     scoreEl.textContent = total;
     maxEl.textContent = max;
     percentEl.textContent = pct;
+
+    // show only assessment & comment
     assessEl.textContent = band.label;
     commentEl.textContent = band.comment;
 
@@ -271,51 +280,15 @@
   });
 
   btnShare.addEventListener('click', ()=>{
-    const {pct,band} = calculateScore();
-    const text = `আমার বাম Meter স্কোর ${pct}% — ${band.label}`;
+    const { band } = calculateScore();
+    // mystique share text: no numeric score
+    const text = `আমার বাম Meter ফলাফল — ${band.label}`;
     const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(location.href)}&quote=${encodeURIComponent(text)}`;
     window.open(shareUrl, '_blank');
   });
 
   // Print to PDF
   btnPrint.addEventListener('click', ()=>{ window.print(); });
-
-  // --- Lightweight Console Tests (dev) ---
-  // These run once on load to validate scoring logic.
-  function scoreFromAnswers(arr){
-    const maxPerQ = Math.max(...LIKERT_OPTIONS.map(o=>o.value));
-    const total = arr.reduce((s,v)=> s + (Number.isFinite(v)? v:0), 0);
-    const max = arr.length * maxPerQ;
-    const pct = Math.round(total/max*100);
-    const band = RUBRIC.find(r => pct >= r.min) || RUBRIC[RUBRIC.length-1];
-    return {total,max,pct,band:band.label};
-  }
-  (function runTests(){
-    try {
-      const n = QUESTIONS.length;
-      const all0 = Array(n).fill(0);
-      const all4 = Array(n).fill(4);
-      const alt = Array.from({length:n}, (_,k)=> k%2===0?4:0);
-      const mid = Array(n).fill(3); // 75% -> "খুব বামপন্থী"
-
-      console.assert(scoreFromAnswers(all0).pct === 0, 'All zeros should be 0%');
-      console.assert(scoreFromAnswers(all0).band === 'মূলধারার', '0% band should be মূলধারার');
-
-      const sAll4 = scoreFromAnswers(all4);
-      console.assert(sAll4.pct === 100 && sAll4.total === 4*n, 'All fours should be 100% and total=4*n');
-      console.assert(sAll4.band === 'একদম লাল চিন্তা!', '100% band should be একদম লাল চিন্তা!');
-
-      const sAlt = scoreFromAnswers(alt);
-      console.assert(sAlt.pct === 50, 'Alternating 4/0 should be 50%');
-
-      const sMid = scoreFromAnswers(mid);
-      console.assert(sMid.pct === 75 && sMid.band === 'খুব বামপন্থী', 'All 3s should be 75% and খুব বামপন্থী');
-
-      console.log('%cTests passed', 'color:green');
-    } catch (e) {
-      console.warn('Test failure:', e);
-    }
-  })();
 
   // Boot
   (function init(){
