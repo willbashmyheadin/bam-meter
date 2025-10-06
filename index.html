@@ -1,0 +1,328 @@
+
+
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>☭ বাম Meter</title>
+  <style>
+    :root { --maxw: 900px; --brand:#ef4444; --brand-dark:#7f1d1d; --ink:#111; --muted:#6b7280; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans Bengali, Noto Sans, Arial, sans-serif; line-height: 1.5; margin: 0; background: #fff5f5; color: var(--ink); }
+    header { background: linear-gradient(90deg,#7f1d1d,#ef4444); color: #fff; padding: 1.1rem 1.25rem; }
+    header h1 { margin: 0; font-size: 1.2rem; }
+
+    main { max-width: var(--maxw); margin: 1rem auto 2rem; background: #fff; padding: 1rem; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.06); }
+
+    .controls { display: flex; flex-wrap: wrap; gap: .6rem; align-items:center; }
+    button { border: 0; padding: .65rem 1rem; border-radius: 999px; cursor: pointer; background: var(--brand); color: #fff; box-shadow: 0 6px 14px rgba(127,29,29,.25); transition: transform .06s ease, box-shadow .2s ease; }
+    button:hover{ transform: translateY(-1px); box-shadow: 0 10px 20px rgba(127,29,29,.25);} 
+    button.secondary { background: #fee2e2; color: var(--brand-dark); }
+    button.ghost { background: transparent; color: var(--brand-dark); border: 1px solid #fecaca; }
+    button[disabled]{ opacity:.5; cursor: not-allowed; }
+
+    fieldset { border: 1px solid #ffe4e6; border-radius: 12px; padding: .9rem; }
+    legend { padding: 0 .25rem; font-weight: 700; color:#7f1d1d; }
+
+    .qcard { padding: .75rem; border-radius: 12px; background: #fff1f2; border: 1px solid #ffe4e6; }
+    .qindex { font-weight:700; color:#7f1d1d; }
+    .qtext { margin: .25rem 0 .75rem; font-weight: 700; }
+
+    .opts { display: grid; grid-template-columns: 1fr; gap: .5rem; }
+    .opt { display: flex; align-items: center; gap: .6rem; padding: .55rem .7rem; border: 1px solid #fecaca; border-radius: 10px; background:#fff; }
+    .opt input { transform: scale(1.15); }
+
+    .navrow { display:flex; gap:.6rem; justify-content: space-between; margin-top: .8rem; }
+    .progress { height: 8px; background:#ffe4e6; border-radius:999px; overflow:hidden; }
+    .bar { height:100%; width:0%; background: linear-gradient(90deg,#fb7185,#ef4444); transition: width .25s ease; }
+
+    .result { display:none; }
+    .result.show { display:block; }
+    .scorebox { background: #fff1f2; border: 1px solid #fecaca; padding: .9rem; border-radius: 12px; }
+    .assessment { font-size: 1.1rem; font-weight: 800; color:#7f1d1d; }
+    .badge { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .8rem; border: 1px solid #fecaca; background:#fff; }
+    .muted { color: var(--muted); }
+
+    .share { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.6rem; }
+
+    /* Print view: render only the result card nicely for PDF */
+    @media print {
+      header, .legend, .quiz, .share, .navrow, .progress { display:none !important; }
+      main { box-shadow:none; }
+      .result { display:block !important; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>☭ বাম Meter</h1>
+  </header>
+  <main>
+    <section class="legend">
+      <fieldset>
+        <legend>কীভাবে খেলবেন</legend>
+        <p>প্রতিটা কথায় আপনি কতটা একমত, বলুন —</p>
+        <ul>
+          <li>👉 পুরোপুরি একমত (৪)</li>
+          <li>👉 একমত (৩)</li>
+          <li>👉 মতামত নেই (২)</li>
+          <li>👉 একমত নই (১)</li>
+          <li>👉 একদমই একমত নই (০)</li>
+        </ul>
+      </fieldset>
+    </section>
+
+    <section class="quiz" aria-live="polite">
+      <div class="progress" aria-hidden="true"><div id="bar" class="bar"></div></div>
+      <div class="qcard" id="qcard">
+        <div class="qindex" id="qindex">প্রশ্ন 1 / 20</div>
+        <div class="qtext" id="qtext">…</div>
+        <div class="opts" id="opts"></div>
+        <div class="navrow">
+          <button id="prev" class="ghost">পেছনে</button>
+          <div class="controls">
+            <button id="reset" class="secondary">রিসেট</button>
+            <button id="next">পরের প্রশ্ন</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="result" class="result" role="region" aria-label="ফলাফল">
+      <div class="scorebox">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:.6rem; flex-wrap:wrap;">
+          <div><span class="badge">মোট স্কোর</span> <span id="score">0</span> / <span id="max">0</span> (<span id="percent">0</span>%)</div>
+        </div>
+        <div class="assessment">সার্বিক মূল্যায়ন: <span id="assessment" class="muted">—</span></div>
+        <div id="comment" class="muted"></div>
+      </div>
+
+      <div class="share">
+        <button id="btnPrint" class="secondary">🧾 PDF ডাউনলোড</button>
+        <button id="btnShare" class="ghost">🔗 শেয়ার</button>
+        <button id="btnCopy" class="ghost">📋 লিংক কপি</button>
+        <button id="btnRestart">আবার শুরু</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+  // Likert options
+  const LIKERT_OPTIONS = [
+    { label: "পুরোপুরি একমত (৪)", value: 4 },
+    { label: "একমত (৩)", value: 3 },
+    { label: "মতামত নেই (২)", value: 2 },
+    { label: "একমত নই (১)", value: 1 },
+    { label: "একদমই একমত নই (০)", value: 0 }
+  ];
+
+  // Questions
+  const QUESTIONS = [
+    "মনে হয় না, দেশের টাকা–পয়সা সব ঘুরেফিরে কিছু পরিবার আর দলবাজদের হাতেই জমে আছে?",
+    "ভোট মানেই এখন মাস্তান, ক্যাডার আর সিন্ডিকেটের খেলা।",
+    "গার্মেন্টসের মালিকরা মুনাফায় মজে, আর শ্রমিকরা ঘাম ঝরিয়েও টিকে থাকতে লড়ে যাচ্ছে — এটাই বাস্তব?",
+    "রিকশাওয়ালা, হকার, গৃহকর্মী — কেউই রাষ্ট্রের নিরাপত্তা পায় না, অথচ ওরাই শহরটা চালিয়ে রাখে৷",
+    "কর্পোরেট হাউজ যখন তখন এম্পলয়ি ছাটাই করে, বেতন দিতে গড়িমসি করে, ইউনিয়ন করতে দেয় না- এগুলো অন্যায়।",
+    "মুক্তিযুদ্ধ হয়েছিল শোষণমুক্তির জন্য — কিন্তু আজও ধনীদের রাজত্ব চলছে এবং কোনো সরকারই এ বিষয়ে কাজ করে না।",
+    "বিশ্বব্যাংক আর আইএমএফ আমাদের দেশে ঋণ দেয়, কিন্তু তাদের শর্তে আমরা হাবুডুবু খাই — এমনটাই মনে হয়?",
+    "স্কুলে ভালো শিক্ষক নেই, বইয়ের মান খারাপ — কারণ বিদেশি দাতারা সরকারকে খরচ কমাতে বলে।",
+    "হাসপাতাল এখন ব্যবসা; গরিব মানুষ শুধু লাইনে দাঁড়িয়েই কষ্ট পায়।",
+    "ফিলিস্তিন নিয়ে ইসলামী দলগুলো যত কথা বলে, কাজের সময় ততটা দেখা যায় না।",
+    "গ্রামে এখনো ছোট ভূমিহীন কৃষকরা বড় জমির মালিক আর মহাজনদের হাতে বিপদে পড়ে।",
+    "আমাদের নদী থেকে বাণিজ্য — অনেক সিদ্ধান্তই নিতে হয় পাশের বড় দেশের চাপে।",
+    "যারা একাত্তরে অপরাধ করেছিল, আজ তারা সম্মানিত হয়ে ঘুরে বেড়ায় — এটা ভীষণ কষ্টদায়ক।",
+    "বেসরকারিকরণের নামে সরকারি সম্পদ (যেমন- বন্দর, খনিজ সম্পদ) বিদেশি কোম্পানিদের কাছে বেচে দেওয়া মানে, আসলে দেশটাই বিক্রি হচ্ছে।",
+    "নারী আর আদিবাসীদের প্রতি বৈষম্য শুধু সংস্কৃতির নয়, এটি অর্থনৈতিক শোষণেরও একটি অংশ।",
+    "রাষ্ট্রের কোনো ধর্ম থাকা উচিত না — সবাইকে সমানভাবে দেখতে হবে।",
+    "ঢাকায় নতুন নতুন রাস্তাঘাট বানানো হয়, কিন্তু গ্রামে মানুষ হাঁটার রাস্তাই পায় না — এই বৈষম্যটা অন্যায় না?",
+    "নারী, আদিবাসী, বা ভিন্ন লিঙ্গের মানুষের অধিকার নিয়ে কথা বলা বিলাসিতা নয় — এটা ন্যায্য দাবি।",
+    "সব বড় দলই ধনীদের পক্ষে খেলে; গরিবের দলে কেউ নেই।",
+    "দেশটা সত্যিকারের বদলাতে হলে ক্ষমতা, জমি আর কারখানা সাধারণ মানুষের হাতে আসতে হবে — নইলে কিছুই হবে না!"
+  ];
+
+  const RUBRIC = [
+    { min: 81, label: "একদম লাল চিন্তা!", comment: "রাষ্ট্র, বাজার, শোষণ— সবকিছুতে রিসেট চাই। 🔥 বিপ্লব স্পন্দিত বুকে— মনে হয় আমিই লেনিন!" },
+    { min: 71, label: "খুব বামপন্থী", comment: "গোড়া বদলের পক্ষে; সংগঠন ও কৌশল জোরদার করুন।" },
+    { min: 51, label: "বামপন্থী", comment: "সিস্টেমিক পরিবর্তন বিশ্বাস করেন; বাস্তব রোডম্যাপ সাজান।" },
+    { min: 26, label: "প্রগতিশীল", comment: "অন্যায় দেখলে অস্বস্তি হয়; ব্যবস্থার ভেতরেই সমাধান খোঁজেন।" },
+    { min: 0,  label: "মূলধারার", comment: "পরিবর্তন চান, কিন্তু পুরো খেলাটা নেড়ে দেখার পক্ষে নন।" }
+  ];
+
+  // Elements
+  const qindexEl = document.getElementById('qindex');
+  const qtextEl  = document.getElementById('qtext');
+  const optsEl   = document.getElementById('opts');
+  const barEl    = document.getElementById('bar');
+  const prevBtn  = document.getElementById('prev');
+  const nextBtn  = document.getElementById('next');
+  const resetBtn = document.getElementById('reset');
+
+  const resultSec= document.getElementById('result');
+  const scoreEl  = document.getElementById('score');
+  const maxEl    = document.getElementById('max');
+  const percentEl= document.getElementById('percent');
+  const assessEl = document.getElementById('assessment');
+  const commentEl= document.getElementById('comment');
+
+  const btnPrint = document.getElementById('btnPrint');
+  const btnShare = document.getElementById('btnShare');
+  const btnCopy  = document.getElementById('btnCopy');
+  const btnRestart= document.getElementById('btnRestart');
+
+  // State
+  let i = 0; // current index
+  const answers = Array(QUESTIONS.length).fill(null); // store selected values
+
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  function getMaxScore(){
+    const maxPerQ = Math.max(...LIKERT_OPTIONS.map(o=>o.value));
+    return QUESTIONS.length * maxPerQ;
+  }
+
+  function calculateScore(){
+    const total = answers.reduce((s,v)=> s + (Number.isFinite(v)? v:0), 0);
+    const max = getMaxScore();
+    const pct = Math.round(total/max*100);
+    const band = RUBRIC.find(r => pct >= r.min) || RUBRIC[RUBRIC.length-1];
+    return {total,max,pct,band};
+  }
+
+  function showResult(){
+    const {total,max,pct,band} = calculateScore();
+    scoreEl.textContent = total;
+    maxEl.textContent = max;
+    percentEl.textContent = pct;
+    assessEl.textContent = band.label;
+    commentEl.textContent = band.comment;
+
+    document.querySelector('.quiz').style.display='none';
+    resultSec.classList.add('show');
+
+    // tiny celebratory effect
+    if (pct >= 81) {
+      for (let k=0;k<20;k++) {
+        const s = document.createElement('div'); s.textContent='🔥';
+        Object.assign(s.style,{position:'fixed',left:Math.random()*100+'vw',top:'-2vh',fontSize:(16+Math.random()*16)+'px',transition:'transform 1.2s ease, opacity 1.2s', zIndex:9999});
+        document.body.appendChild(s);
+        requestAnimationFrame(()=>{ s.style.transform=`translateY(${90+Math.random()*10}vh) rotate(${(Math.random()*360)|0}deg)`; s.style.opacity=0.1; });
+        setTimeout(()=>s.remove(),1500);
+      }
+    }
+  }
+
+  function renderQuestion(){
+    qindexEl.textContent = `প্রশ্ন ${i+1} / ${QUESTIONS.length}`;
+    qtextEl.textContent = QUESTIONS[i];
+    optsEl.innerHTML = LIKERT_OPTIONS.map((opt,idx)=>{
+      const id = `q${i}_o${idx}`;
+      const checked = answers[i]===opt.value ? 'checked' : '';
+      return `<label class="opt" for="${id}"><input type="radio" id="${id}" name="q${i}" value="${opt.value}" ${checked}> <span>${escapeHtml(opt.label)}</span></label>`
+    }).join('');
+
+    // progress
+    barEl.style.width = `${(i)/QUESTIONS.length*100}%`;
+
+    prevBtn.disabled = i===0;
+    nextBtn.textContent = (i===QUESTIONS.length-1) ? 'ফলাফল দেখুন' : 'পরের প্রশ্ন';
+  }
+
+  // Event wires
+  optsEl.addEventListener('change', (e)=>{
+    if (e.target && e.target.name===`q${i}`) {
+      answers[i] = Number(e.target.value);
+    }
+  });
+
+  nextBtn.addEventListener('click', ()=>{
+    if (!Number.isFinite(answers[i])) { alert('একটি অপশন বাছাই করুন।'); return; }
+    if (i < QUESTIONS.length - 1) {
+      i++;
+      renderQuestion();
+    } else {
+      // last question: ensure all answered, else jump to first missing
+      const missingIndex = answers.findIndex(v=>!Number.isFinite(v));
+      if (missingIndex === -1) {
+        showResult();
+      } else {
+        alert('সব প্রশ্নের উত্তর দিন।');
+        i = missingIndex; renderQuestion();
+      }
+    }
+  });
+
+  prevBtn.addEventListener('click', ()=>{
+    i = Math.max(i-1, 0);
+    renderQuestion();
+  });
+
+  resetBtn.addEventListener('click', ()=>{
+    for (let k=0;k<answers.length;k++) answers[k]=null;
+    i=0; renderQuestion();
+  });
+
+  btnRestart.addEventListener('click', ()=>{
+    window.location.reload();
+  });
+
+  // Share buttons
+  btnCopy.addEventListener('click', async ()=>{
+    try { await navigator.clipboard.writeText(location.href); btnCopy.textContent='✅ কপি হয়েছে'; setTimeout(()=>btnCopy.textContent='📋 লিংক কপি',1200);} catch(_){ alert('কপি করা গেল না'); }
+  });
+
+  btnShare.addEventListener('click', ()=>{
+    const {pct,band} = calculateScore();
+    const text = `আমার বাম Meter স্কোর ${pct}% — ${band.label}`;
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(location.href)}&quote=${encodeURIComponent(text)}`;
+    window.open(shareUrl, '_blank');
+  });
+
+  // Print to PDF
+  btnPrint.addEventListener('click', ()=>{ window.print(); });
+
+  // --- Lightweight Console Tests (dev) ---
+  // These run once on load to validate scoring logic.
+  function scoreFromAnswers(arr){
+    const maxPerQ = Math.max(...LIKERT_OPTIONS.map(o=>o.value));
+    const total = arr.reduce((s,v)=> s + (Number.isFinite(v)? v:0), 0);
+    const max = arr.length * maxPerQ;
+    const pct = Math.round(total/max*100);
+    const band = RUBRIC.find(r => pct >= r.min) || RUBRIC[RUBRIC.length-1];
+    return {total,max,pct,band:band.label};
+  }
+  (function runTests(){
+    try {
+      const n = QUESTIONS.length;
+      const all0 = Array(n).fill(0);
+      const all4 = Array(n).fill(4);
+      const alt = Array.from({length:n}, (_,k)=> k%2===0?4:0);
+      const mid = Array(n).fill(3); // 75% -> "খুব বামপন্থী"
+
+      console.assert(scoreFromAnswers(all0).pct === 0, 'All zeros should be 0%');
+      console.assert(scoreFromAnswers(all0).band === 'মূলধারার', '0% band should be মূলধারার');
+
+      const sAll4 = scoreFromAnswers(all4);
+      console.assert(sAll4.pct === 100 && sAll4.total === 4*n, 'All fours should be 100% and total=4*n');
+      console.assert(sAll4.band === 'একদম লাল চিন্তা!', '100% band should be একদম লাল চিন্তা!');
+
+      const sAlt = scoreFromAnswers(alt);
+      console.assert(sAlt.pct === 50, 'Alternating 4/0 should be 50%');
+
+      const sMid = scoreFromAnswers(mid);
+      console.assert(sMid.pct === 75 && sMid.band === 'খুব বামপন্থী', 'All 3s should be 75% and খুব বামপন্থী');
+
+      console.log('%cTests passed', 'color:green');
+    } catch (e) {
+      console.warn('Test failure:', e);
+    }
+  })();
+
+  // Boot
+  (function init(){
+    document.getElementById('max').textContent = getMaxScore();
+    renderQuestion();
+  })();
+  </script>
+</body>
+</html>
+
